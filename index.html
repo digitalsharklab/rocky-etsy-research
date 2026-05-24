@@ -163,7 +163,6 @@
       </div>
     </div>
     <div class="content">
-      <!-- CHAT TAB -->
       <div id="chat" class="tab active">
         <h2>💬 CHAT WITH CLAUDE</h2>
         <div class="chat-container">
@@ -174,20 +173,14 @@
           </div>
         </div>
       </div>
-
-      <!-- RESEARCH TAB -->
       <div id="research" class="tab">
         <h2>🔍 ETSY RESEARCH</h2>
         <p style="color: var(--text2);">Research coming soon...</p>
       </div>
-
-      <!-- DASHBOARD TAB -->
       <div id="dashboard" class="tab">
         <h2>📊 DASHBOARD</h2>
         <p style="color: var(--text2);">Dashboard coming soon...</p>
       </div>
-
-      <!-- PLAN TAB -->
       <div id="plan" class="tab">
         <h2>📅 WEEKLY PLAN</h2>
         <p style="color: var(--text2);">Plan generator coming soon...</p>
@@ -223,7 +216,6 @@
     input.value = '';
     addMessage(text, true);
     
-    // Show loading
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'message';
     loadingDiv.innerHTML = '<div class="loading"><div class="spinner"></div> Thinking...</div>';
@@ -258,7 +250,6 @@
     }
   }
 
-  // Welcome message
   window.addEventListener('load', () => {
     addMessage('👋 Hello! I\'m R.O.C.K.Y., your AI assistant for Etsy digital products. How can I help you today?', false);
   });
