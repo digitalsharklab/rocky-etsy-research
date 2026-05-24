@@ -3,9 +3,11 @@ const cors = require('cors');
 
 const app = express();
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
+// Environment variables
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const PORT = process.env.PORT || 3000;
 
@@ -13,6 +15,7 @@ console.log('🚀 Starting R.O.C.K.Y. Backend...');
 console.log('🔑 API Key present:', !!ANTHROPIC_API_KEY);
 console.log('📍 Port:', PORT);
 
+// Health check
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -21,6 +24,7 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ROOT
 app.get('/', (req, res) => {
   res.json({ 
     message: 'R.O.C.K.Y. Backend API is running',
@@ -32,6 +36,9 @@ app.get('/', (req, res) => {
   });
 });
 
+// ============================================
+// CLAUDE CHAT ENDPOINT
+// ============================================
 app.post('/api/chat', async (req, res) => {
   try {
     console.log('\n📨 New chat request received');
@@ -66,7 +73,7 @@ app.post('/api/chat', async (req, res) => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 1000,
         messages: [{ 
           role: 'user', 
@@ -95,7 +102,7 @@ app.post('/api/chat', async (req, res) => {
     res.json({
       success: true,
       response: reply,
-      model: 'claude-sonnet-4-20250514'
+      model: 'claude-3-5-sonnet-20241022'
     });
 
   } catch (error) {
@@ -106,6 +113,10 @@ app.post('/api/chat', async (req, res) => {
     });
   }
 });
+
+// ============================================
+// ETSY RESEARCH ENDPOINTS
+// ============================================
 
 app.post('/api/research/category', async (req, res) => {
   try {
@@ -139,10 +150,18 @@ app.post('/api/research/all', async (req, res) => {
   }
 });
 
+// ============================================
+// ERROR HANDLING
+// ============================================
+
 app.use((req, res) => {
   console.log('❌ 404 - Endpoint not found:', req.path);
   res.status(404).json({ error: 'Endpoint not found' });
 });
+
+// ============================================
+// START SERVER
+// ============================================
 
 app.listen(PORT, () => {
   console.log('\n✅ R.O.C.K.Y. Backend is ONLINE!');
