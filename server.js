@@ -26,7 +26,7 @@ app.post('/api/chat', async (req, res) => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-6',
+        model: 'claude-opus-4-20250514',
         max_tokens: 1000,
         messages: [{ role: 'user', content: message }],
         system: 'You are R.O.C.K.Y., an AI assistant for Etsy digital product sellers.'
