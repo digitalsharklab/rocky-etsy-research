@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="R.O.C.K.Y. — asystent AI i narzędzie do researchu rynku Etsy dla twórców produktów cyfrowych">
+<title>R.O.C.K.Y. — Etsy Research</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060b14;
+    --surface: #0c1524;
+    --surface-2: #111d31;
+    --border: #1d3a5c;
+    --accent: #35c3f2;
+    --accent-dim: rgba(53, 195, 242, 0.12);
+    --ink: #e8f2fb;
+    --ink-2: #9db4c8;
+    --ink-3: #5f7a92;
+    --good: #3ecf8e;
+    --warn: #f5b83d;
+    --bad: #f26d6d;
+    --radius: 10px;
+    --font-display: 'Space Grotesk', 'Segoe UI', sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  input, textarea { font-family: inherit; }
+
+  .layout { display: flex; height: 100vh; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: 232px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    padding: 22px 14px;
+    gap: 6px;
+  }
+  .brand {
+    font-family: var(--font-display);
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--accent);
+    padding: 0 10px 4px;
+  }
+  .brand small {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.4px;
+    color: var(--ink-3);
+    margin-top: 2px;
+  }
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--ink-2);
+    font-size: 14.5px;
+    font-weight: 500;
+    text-align: left;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-btn:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-btn.active {
+    background: var(--accent-dim);
+    border-color: rgba(53, 195, 242, 0.35);
+    color: var(--accent);
+  }
+  .sidebar-footer { margin-top: auto; padding: 10px; font-size: 12px; color: var(--ink-3); }
+  .status-row { display: flex; align-items: center; gap: 7px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); flex-shrink: 0; }
+  .status-dot.online { background: var(--good); }
+  .status-dot.warn { background: var(--warn); }
+  .status-dot.offline { background: var(--bad); }
+  .status-model { margin-top: 4px; word-break: break-all; }
+
+  /* ---------- Main ---------- */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .topbar {
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  .topbar h1 { font-family: var(--font-display); font-size: 19px; font-weight: 600; }
+  .topbar .subtitle { font-size: 13px; color: var(--ink-3); }
+  .content { flex: 1; overflow-y: auto; padding: 26px 28px; }
+  .tab { display: none; max-width: 900px; }
+  .tab.active { display: block; }
+
+  /* ---------- Chat ---------- */
+  #tab-chat { display: none; height: 100%; max-width: 900px; }
+  #tab-chat.active { display: flex; flex-direction: column; }
+  .chat-messages { flex: 1; overflow-y: auto; padding-right: 6px; display: flex; flex-direction: column; gap: 14px; }
+  .msg { max-width: 82%; padding: 12px 15px; border-radius: var(--radius); font-size: 14.5px; }
+  .msg.user { align-self: flex-end; background: var(--accent-dim); border: 1px solid rgba(53, 195, 242, 0.3); }
+  .msg.assistant { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); }
+  .msg.error { align-self: flex-start; background: rgba(242, 109, 109, 0.1); border: 1px solid rgba(242, 109, 109, 0.4); color: #f6a5a5; }
+  .msg p + p { margin-top: 8px; }
+  .msg code { background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  .msg ul { margin: 6px 0 6px 18px; }
+  .typing { align-self: flex-start; color: var(--ink-3); font-size: 13px; padding: 8px 2px; }
+  .typing::after { content: ''; animation: dots 1.2s steps(4, end) infinite; }
+  @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+  .chat-input-row { display: flex; gap: 10px; padding-top: 16px; }
+  .chat-input-row textarea {
+    flex: 1;
+    resize: none;
+    height: 52px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 14.5px;
+  }
+  .chat-input-row textarea:focus, .research-form input:focus { outline: none; border-color: var(--accent); }
+  .btn {
+    padding: 0 22px;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: #04121c;
+    font-size: 14.5px;
+    font-weight: 600;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.88; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink-2);
+    border: 1px solid var(--border);
+    font-weight: 500;
+  }
+  .btn-ghost:hover { color: var(--ink); border-color: var(--ink-3); opacity: 1; }
+  .chat-tools { display: flex; justify-content: flex-end; padding-top: 8px; }
+  .chat-tools button { font-size: 12.5px; padding: 5px 12px; border-radius: 7px; }
+
+  /* ---------- Research ---------- */
+  .research-form { display: flex; gap: 10px; }
+  .research-form input {
+    flex: 1;
+    padding: 13px 15px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 15px;
+  }
+  .examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .chip {
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-2);
+    font-size: 12.5px;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .research-status { margin-top: 22px; color: var(--ink-2); font-size: 14px; display: none; }
+  .spinner {
+    display: inline-block; width: 14px; height: 14px; margin-right: 8px;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; vertical-align: -2px;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result { margin-top: 24px; display: none; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 14px;
+  }
+  .card h3 {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--ink-3);
+    margin-bottom: 10px;
+  }
+  .result-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .result-header h2 { font-family: var(--font-display); font-size: 20px; font-weight: 600; flex: 1; min-width: 200px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 999px;
+    font-size: 12.5px; font-weight: 600; letter-spacing: 0.3px;
+    border: 1px solid;
+  }
+  .badge.good { color: var(--good); border-color: rgba(62, 207, 142, 0.5); background: rgba(62, 207, 142, 0.1); }
+  .badge.warn { color: var(--warn); border-color: rgba(245, 184, 61, 0.5); background: rgba(245, 184, 61, 0.1); }
+  .badge.bad { color: var(--bad); border-color: rgba(242, 109, 109, 0.5); background: rgba(242, 109, 109, 0.1); }
+  .badge.neutral { color: var(--ink-2); border-color: var(--border); background: var(--surface-2); }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .metric { background: var(--surface-2); border-radius: 8px; padding: 12px 14px; }
+  .metric .label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--ink-3); }
+  .metric .value { font-family: var(--font-display); font-size: 16px; font-weight: 600; margin-top: 3px; }
+  .list { margin-left: 18px; color: var(--ink); }
+  .list li { margin-bottom: 5px; }
+  .list li::marker { color: var(--accent); }
+  .steps { margin-left: 20px; }
+  .steps li { margin-bottom: 6px; }
+  .rec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 12px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; color: var(--ink-3); font-weight: 500; padding: 7px 10px; border-bottom: 1px solid var(--border); }
+  td { padding: 7px 10px; border-bottom: 1px solid rgba(29, 58, 92, 0.4); }
+  td a { color: var(--accent); text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+  .muted { color: var(--ink-3); font-size: 12.5px; }
+
+  /* ---------- Dashboard ---------- */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .stat-tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .stat-tile .num { font-family: var(--font-display); font-size: 32px; font-weight: 700; line-height: 1.1; }
+  .stat-tile .lbl { font-size: 12.5px; color: var(--ink-3); margin-top: 4px; }
+  .history-item {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 13px 16px; margin-bottom: 10px;
+  }
+  .history-item .cat { flex: 1; min-width: 0; }
+  .history-item .cat b { font-weight: 600; }
+  .history-item .cat .muted { display: block; margin-top: 1px; }
+  .history-item button { flex-shrink: 0; font-size: 12.5px; padding: 6px 12px; border-radius: 7px; }
+  .empty { color: var(--ink-3); padding: 30px 0; text-align: center; }
+  .dash-tools { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 720px) {
+    .layout { flex-direction: column; }
+    .sidebar { width: 100%; flex-direction: row; align-items: center; padding: 10px 12px; border-right: none; border-bottom: 1px solid var(--border); }
+    .brand { font-size: 16px; padding: 0 8px; }
+    .brand small { display: none; }
+    .nav-btn { width: auto; padding: 8px 12px; font-size: 13px; }
+    .sidebar-footer { display: none; }
+    .content { padding: 18px 14px; }
+    .msg { max-width: 95%; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">💎 R.O.C.K.Y.<small>Etsy Research Assistant</small></div>
+    <button class="nav-btn active" data-tab="chat">💬 Czat</button>
+    <button class="nav-btn" data-tab="research">🔍 Research</button>
+    <button class="nav-btn" data-tab="dashboard">📊 Dashboard</button>
+    <div class="sidebar-footer">
+      <div class="status-row"><span class="status-dot" id="statusDot"></span><span id="statusText">Łączenie…</span></div>
+      <div class="status-model" id="statusModel"></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <h1 id="tabTitle">Czat</h1>
+      <span class="subtitle" id="tabSubtitle">Twój asystent AI do produktów cyfrowych na Etsy</span>
+    </div>
+    <div class="content">
+
+      <!-- CHAT -->
+      <section id="tab-chat" class="tab active">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-row">
+          <textarea id="chatInput" placeholder="Zapytaj o nisze, ceny, SEO, pomysły na produkty… (Enter = wyślij, Shift+Enter = nowa linia)"></textarea>
+          <button class="btn" id="chatSend">Wyślij</button>
+        </div>
+        <div class="chat-tools">
+          <button class="btn-ghost btn" id="chatClear">Wyczyść rozmowę</button>
+        </div>
+      </section>
+
+      <!-- RESEARCH -->
+      <section id="tab-research" class="tab">
+        <div class="research-form">
+          <input id="researchInput" maxlength="80" placeholder="Wpisz niszę lub kategorię, np. „printable planners”">
+          <button class="btn" id="researchBtn">Analizuj</button>
+        </div>
+        <div class="examples" id="examples"></div>
+        <div class="research-status" id="researchStatus"></div>
+        <div class="result" id="researchResult"></div>
+      </section>
+
+      <!-- DASHBOARD -->
+      <section id="tab-dashboard" class="tab">
+        <div class="stats" id="dashStats"></div>
+        <div class="dash-tools">
+          <button class="btn-ghost btn" id="dashClear" style="font-size:12.5px;padding:6px 14px;">Usuń wszystkie analizy</button>
+        </div>
+        <div id="dashHistory"></div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const API = '/api';
+  const CHAT_KEY = 'rocky.chat.v1';
+  const RESEARCH_KEY = 'rocky.research.v1';
+
+  const $ = (id) => document.getElementById(id);
+
+  const TAB_META = {
+    chat: ['Czat', 'Twój asystent AI do produktów cyfrowych na Etsy'],
+    research: ['Research', 'Analiza nisz i kategorii na Etsy z pomocą Claude'],
+    dashboard: ['Dashboard', 'Historia i statystyki Twoich analiz'],
+  };
+
+  // ---------------- helpers ----------------
+  const escapeHtml = (s) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  // minimal, safe markdown: bold, inline code, bullet lists, paragraphs
+  function renderMarkdown(text) {
+    const lines = escapeHtml(text).split('\n');
+    let html = '';
+    let inList = false;
+    for (const line of lines) {
+      const li = line.match(/^\s*[-*]\s+(.*)/);
+      if (li) {
+        if (!inList) { html += '<ul>'; inList = true; }
+        html += `<li>${inline(li[1])}</li>`;
+      } else {
+        if (inList) { html += '</ul>'; inList = false; }
+        if (line.trim()) html += `<p>${inline(line)}</p>`;
+      }
+    }
+    if (inList) html += '</ul>';
+    return html;
+
+    function inline(s) {
+      return s
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+    }
+  }
+
+  function load(key, fallback) {
+    try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+  }
+  function save(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* storage full/blocked */ }
+  }
+
+  async function postJson(path, body) {
+    const response = await fetch(`${API}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    let data = null;
+    try { data = await response.json(); } catch { /* non-JSON */ }
+    if (!response.ok) {
+      throw new Error(data?.error || `Błąd serwera (HTTP ${response.status})`);
+    }
+    return data;
+  }
+
+  const fmtDate = (iso) =>
+    new Date(iso).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  // ---------------- tabs ----------------
+  document.querySelectorAll('.nav-btn').forEach((btn) => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach((el) => el.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach((el) => el.classList.toggle('active', el.dataset.tab === name));
+    $(`tab-${name}`).classList.add('active');
+    $('tabTitle').textContent = TAB_META[name][0];
+    $('tabSubtitle').textContent = TAB_META[name][1];
+    if (name === 'dashboard') renderDashboard();
+  }
+
+  // ---------------- health ----------------
+  (async () => {
+    const dot = $('statusDot');
+    try {
+      const response = await fetch(`${API}/health`);
+      const data = await response.json();
+      if (data.apiKeyConfigured) {
+        dot.classList.add('online');
+        $('statusText').textContent = 'System online';
+      } else {
+        dot.classList.add('warn');
+        $('statusText').textContent = 'Brak klucza API';
+      }
+      $('statusModel').textContent = data.model || '';
+    } catch {
+      dot.classList.add('offline');
+      $('statusText').textContent = 'Backend niedostępny';
+    }
+  })();
+
+  // ---------------- chat ----------------
+  let chatHistory = load(CHAT_KEY, []);
+  let chatBusy = false;
+
+  function appendMessage(role, text) {
+    const el = document.createElement('div');
+    el.className = `msg ${role}`;
+    el.innerHTML = role === 'error' ? escapeHtml(text) : renderMarkdown(text);
+    $('chatMessages').appendChild(el);
+    $('chatMessages').scrollTop = $('chatMessages').scrollHeight;
+    return el;
+  }
+
+  function renderChat() {
+    $('chatMessages').innerHTML = '';
+    if (chatHistory.length === 0) {
+      appendMessage('assistant', 'Cześć! Jestem **R.O.C.K.Y.** — Twój asystent od produktów cyfrowych na Etsy. Zapytaj mnie o nisze, ceny, SEO albo pomysły na produkty.');
+      return;
+    }
+    for (const message of chatHistory) appendMessage(message.role, message.content);
+  }
+
+  async function sendChat() {
+    const input = $('chatInput');
+    const text = input.value.trim();
+    if (!text || chatBusy) return;
+
+    input.value = '';
+    chatBusy = true;
+    $('chatSend').disabled = true;
+    chatHistory.push({ role: 'user', content: text });
+    appendMessage('user', text);
+
+    const typing = document.createElement('div');
+    typing.className = 'typing';
+    typing.textContent = 'R.O.C.K.Y. pisze';
+    $('chatMessages').appendChild(typing);
+    $('chatMessages').scrollTop = $('chatMessages').scrollHeight;
+
+    try {
+      const data = await postJson('/chat', { messages: chatHistory });
+      chatHistory.push({ role: 'assistant', content: data.reply });
+      save(CHAT_KEY, chatHistory);
+      typing.remove();
+      appendMessage('assistant', data.reply);
+    } catch (error) {
+      typing.remove();
+      chatHistory.pop(); // keep history consistent with what the server accepted
+      save(CHAT_KEY, chatHistory);
+      appendMessage('error', `⚠ ${error.message}`);
+    } finally {
+      chatBusy = false;
+      $('chatSend').disabled = false;
+      input.focus();
+    }
+  }
+
+  $('chatSend').addEventListener('click', sendChat);
+  $('chatInput').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      sendChat();
+    }
+  });
+  $('chatClear').addEventListener('click', () => {
+    chatHistory = [];
+    save(CHAT_KEY, chatHistory);
+    renderChat();
+  });
+  renderChat();
+
+  // ---------------- research ----------------
+  const EXAMPLES = ['printable planners', 'notion templates', 'wall art prints', 'wedding invitations', 'digital stickers', 'resume templates', 'coloring pages'];
+  for (const example of EXAMPLES) {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = example;
+    chip.addEventListener('click', () => {
+      $('researchInput').value = example;
+      runResearch();
+    });
+    $('examples').appendChild(chip);
+  }
+
+  const VERDICT = { YES: ['TAK — warto', 'good'], MAYBE: ['MOŻE — ostrożnie', 'warn'], NO: ['NIE — odpuść', 'bad'] };
+  const HEALTH = { HOT: ['🔥 Gorący', 'good'], MODERATE: ['Umiarkowany', 'warn'], COOLING: ['Stygnący', 'bad'] };
+  const LEVEL_PL = { HIGH: 'Wysoka', MEDIUM: 'Średnia', LOW: 'Niska' };
+  const DIFF_PL = { EASY: 'Łatwo', MEDIUM: 'Średnio', HARD: 'Trudno' };
+
+  let researchBusy = false;
+
+  async function runResearch() {
+    const category = $('researchInput').value.trim();
+    if (category.length < 2 || researchBusy) return;
+
+    researchBusy = true;
+    $('researchBtn').disabled = true;
+    $('researchResult').style.display = 'none';
+    const status = $('researchStatus');
+    status.style.display = 'block';
+    status.innerHTML = '<span class="spinner"></span>Pobieram dane z Etsy i analizuję z Claude — to potrwa kilkanaście sekund…';
+
+    try {
+      const data = await postJson('/research', { category });
+      status.style.display = 'none';
+      renderResearchResult(data);
+      saveResearch(data);
+    } catch (error) {
+      status.innerHTML = `⚠ ${escapeHtml(error.message)}`;
+    } finally {
+      researchBusy = false;
+      $('researchBtn').disabled = false;
+    }
+  }
+
+  function saveResearch(data) {
+    const history = load(RESEARCH_KEY, []);
+    history.unshift(data);
+    save(RESEARCH_KEY, history.slice(0, 50));
+  }
+
+  function renderResearchResult(data) {
+    const a = data.analysis;
+    const [verdictLabel, verdictClass] = VERDICT[a.verdict] || [a.verdict, 'neutral'];
+    const [healthLabel, healthClass] = HEALTH[a.marketHealth] || [a.marketHealth, 'neutral'];
+    const sourceBadge =
+      data.dataSource === 'live'
+        ? `<span class="badge neutral" title="Analiza na podstawie zescrapowanych wyników wyszukiwania Etsy">📡 Dane live z Etsy (${data.productsFound} produktów)</span>`
+        : '<span class="badge neutral" title="Etsy zablokowało pobieranie danych — analiza oparta na wiedzy modelu">🧠 Wiedza AI (brak danych live)</span>';
+
+    let html = `
+      <div class="card">
+        <div class="result-header">
+          <h2>${escapeHtml(data.category)}</h2>
+          <span class="badge ${verdictClass}">${verdictLabel}</span>
+          ${sourceBadge}
+        </div>
+        <p style="margin-top:12px;">${escapeHtml(a.summary || '')}</p>
+        <p class="muted" style="margin-top:8px;">${escapeHtml(a.verdictReasoning || '')}</p>
+      </div>
+
+      <div class="card">
+        <h3>Kluczowe wskaźniki</h3>
+        <div class="metrics">
+          <div class="metric"><div class="label">Rynek</div><div class="value"><span class="badge ${healthClass}">${healthLabel}</span></div></div>
+          <div class="metric"><div class="label">Konkurencja</div><div class="value">${LEVEL_PL[a.competitionLevel] || a.competitionLevel}</div></div>
+          <div class="metric"><div class="label">Ryzyko</div><div class="value">${LEVEL_PL[a.riskLevel] || a.riskLevel}</div></div>
+          <div class="metric"><div class="label">Typowe ceny</div><div class="value">${escapeHtml(a.estimatedPriceRange || '—')}</div></div>
+        </div>
+      </div>`;
+
+    if (a.topTrends?.length || a.opportunities?.length) {
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;">';
+      if (a.topTrends?.length) {
+        html += `<div class="card" style="margin-bottom:0;"><h3>Trendy</h3><ul class="list">${a.topTrends.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul></div>`;
+      }
+      if (a.opportunities?.length) {
+        html += `<div class="card" style="margin-bottom:0;"><h3>Okazje / luki</h3><ul class="list">${a.opportunities.map((o) => `<li>${escapeHtml(o)}</li>`).join('')}</ul></div>`;
+      }
+      html += '</div><div style="height:14px;"></div>';
+    }
+
+    const r = a.recommendation;
+    if (r) {
+      html += `
+      <div class="card">
+        <h3>Rekomendacja: co stworzyć</h3>
+        <p style="font-size:16px;font-weight:600;">${escapeHtml(r.whatToCreate || '')}</p>
+        <div class="rec-grid">
+          <div class="metric"><div class="label">Cena docelowa</div><div class="value">${escapeHtml(r.targetPrice || '—')}</div></div>
+          <div class="metric"><div class="label">Popyt</div><div class="value">${LEVEL_PL[r.estimatedDemand] || r.estimatedDemand || '—'}</div></div>
+          <div class="metric"><div class="label">Trudność</div><div class="value">${DIFF_PL[r.difficulty] || r.difficulty || '—'}</div></div>
+        </div>
+        ${r.startingSteps?.length ? `<h3 style="margin-top:14px;">Pierwsze kroki</h3><ol class="steps">${r.startingSteps.map((s) => `<li>${escapeHtml(s)}</li>`).join('')}</ol>` : ''}
+      </div>`;
+    }
+
+    if (data.products?.length) {
+      html += `
+      <div class="card">
+        <h3>Przykładowe produkty z Etsy</h3>
+        <table>
+          <thead><tr><th>Produkt</th><th style="width:90px;">Cena</th></tr></thead>
+          <tbody>
+            ${data.products
+              .map(
+                (p) => `<tr>
+                  <td>${p.url ? `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(p.title)}</a>` : escapeHtml(p.title)}</td>
+                  <td>${p.currency ? escapeHtml(String(p.currency)) : ''}${p.price}</td>
+                </tr>`
+              )
+              .join('')}
+          </tbody>
+        </table>
+      </div>`;
+    }
+
+    html += `<p class="muted">Analiza: ${fmtDate(data.timestamp)} · model ${escapeHtml(data.model || '')}</p>`;
+
+    const box = $('researchResult');
+    box.innerHTML = html;
+    box.style.display = 'block';
+  }
+
+  $('researchBtn').addEventListener('click', runResearch);
+  $('researchInput').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') runResearch();
+  });
+
+  // ---------------- dashboard ----------------
+  function renderDashboard() {
+    const history = load(RESEARCH_KEY, []);
+    const yes = history.filter((h) => h.analysis?.verdict === 'YES').length;
+    const maybe = history.filter((h) => h.analysis?.verdict === 'MAYBE').length;
+
+    $('dashStats').innerHTML = `
+      <div class="stat-tile"><div class="num">${history.length}</div><div class="lbl">Zapisane analizy</div></div>
+      <div class="stat-tile"><div class="num">${yes}</div><div class="lbl">Werdykt „TAK — warto”</div></div>
+      <div class="stat-tile"><div class="num">${maybe}</div><div class="lbl">Werdykt „MOŻE”</div></div>
+      <div class="stat-tile"><div class="num">${history.length ? fmtDate(history[0].timestamp).split(',')[0] : '—'}</div><div class="lbl">Ostatnia analiza</div></div>`;
+
+    const box = $('dashHistory');
+    if (history.length === 0) {
+      box.innerHTML = '<div class="empty">Brak zapisanych analiz. Przejdź do zakładki <b>Research</b> i przeanalizuj pierwszą niszę.</div>';
+      return;
+    }
+    box.innerHTML = '';
+    history.forEach((item, index) => {
+      const [verdictLabel, verdictClass] = VERDICT[item.analysis?.verdict] || ['—', 'neutral'];
+      const row = document.createElement('div');
+      row.className = 'history-item';
+      row.innerHTML = `
+        <div class="cat"><b>${escapeHtml(item.category)}</b><span class="muted">${fmtDate(item.timestamp)} · ${item.dataSource === 'live' ? 'dane live' : 'wiedza AI'}</span></div>
+        <span class="badge ${verdictClass}">${verdictLabel}</span>
+        <button class="btn btn-ghost" data-open="${index}">Otwórz</button>
+        <button class="btn btn-ghost" data-del="${index}" title="Usuń">✕</button>`;
+      box.appendChild(row);
+    });
+
+    box.querySelectorAll('[data-open]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const item = load(RESEARCH_KEY, [])[Number(btn.dataset.open)];
+        if (!item) return;
+        switchTab('research');
+        $('researchInput').value = item.category;
+        $('researchStatus').style.display = 'none';
+        renderResearchResult(item);
+      })
+    );
+    box.querySelectorAll('[data-del]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const history = load(RESEARCH_KEY, []);
+        history.splice(Number(btn.dataset.del), 1);
+        save(RESEARCH_KEY, history);
+        renderDashboard();
+      })
+    );
+  }
+
+  $('dashClear').addEventListener('click', () => {
+    if (confirm('Na pewno usunąć wszystkie zapisane analizy?')) {
+      save(RESEARCH_KEY, []);
+      renderDashboard();
+    }
+  });
+})();
+</script>
+</body>
+</html>
