@@ -1,26 +1,22 @@
 {
   "name": "rocky-etsy-research",
-  "version": "2.0.0",
-  "description": "R.O.C.K.Y. - Etsy Research Backend with Claude AI Analysis",
-  "main": "etsy-backend-api.js",
+  "version": "3.0.0",
+  "description": "R.O.C.K.Y. — AI assistant and market research tool for Etsy digital product sellers",
+  "main": "server.js",
   "scripts": {
-    "start": "node etsy-backend-api.js",
-    "dev": "node etsy-backend-api.js"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
-  "keywords": ["rocky", "etsy", "research", "web-scraping", "claude-ai", "digital-products"],
+  "keywords": ["rocky", "etsy", "research", "claude", "digital-products"],
   "author": "digitalsharklab",
   "license": "MIT",
-  "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "node-fetch": "^2.7.0",
-    "cheerio": "^1.0.0-rc.12",
-    "firebase-admin": "^12.0.0"
-  },
   "engines": {
-    "node": "24.x"
+    "node": ">=20"
   },
-  "devDependencies": {
-    "dotenv": "^16.3.1"
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.0",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
   }
 }
