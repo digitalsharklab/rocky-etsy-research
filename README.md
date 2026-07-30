@@ -62,6 +62,18 @@ node --env-file=.env server.js
    (opcjonalnie `CLAUDE_MODEL`, `ALLOWED_ORIGIN`, `RATE_LIMIT_PER_MINUTE`).
 3. Deploy — statyki serwowane są z `public/`, API z `api/index.js`.
 
+## 📱 Wersja na iPhone / telefon (PWA)
+
+Aplikacja jest instalowalną PWA — ten sam kod działa na komputerze i telefonie:
+
+1. Otwórz adres aplikacji (URL z Vercela) w **Safari** na iPhonie.
+2. Stuknij przycisk **Udostępnij** (kwadrat ze strzałką) → **Dodaj do ekranu początkowego**.
+3. Na ekranie pojawi się ikona R.O.C.K.Y. — aplikacja otwiera się na pełnym
+   ekranie, z dolnym paskiem nawigacji jak w natywnej appce.
+
+Uwaga: historia czatu i analiz jest zapisywana lokalnie na każdym urządzeniu
+osobno (localStorage), więc Mac i iPhone mają niezależne historie.
+
 ## Konfiguracja
 
 | Zmienna | Domyślnie | Opis |

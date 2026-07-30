@@ -2,8 +2,16 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="description" content="R.O.C.K.Y. — asystent AI i narzędzie do researchu rynku Etsy dla twórców produktów cyfrowych">
+<meta name="theme-color" content="#060b14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="R.O.C.K.Y.">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <title>R.O.C.K.Y. — Etsy Research</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,7 +46,7 @@
   button { font-family: inherit; cursor: pointer; }
   input, textarea { font-family: inherit; }
 
-  .layout { display: flex; height: 100vh; }
+  .layout { display: flex; height: 100vh; height: 100dvh; }
 
   /* ---------- Sidebar ---------- */
   .sidebar {
@@ -253,16 +261,26 @@
   .empty { color: var(--ink-3); padding: 30px 0; text-align: center; }
   .dash-tools { display: flex; justify-content: flex-end; margin-bottom: 12px; }
 
-  /* ---------- Responsive ---------- */
+  /* ---------- Responsive: bottom tab bar on phones ---------- */
   @media (max-width: 720px) {
     .layout { flex-direction: column; }
-    .sidebar { width: 100%; flex-direction: row; align-items: center; padding: 10px 12px; border-right: none; border-bottom: 1px solid var(--border); }
-    .brand { font-size: 16px; padding: 0 8px; }
-    .brand small { display: none; }
-    .nav-btn { width: auto; padding: 8px 12px; font-size: 13px; }
-    .sidebar-footer { display: none; }
-    .content { padding: 18px 14px; }
+    .sidebar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+      width: 100%; flex-direction: row; align-items: stretch; gap: 4px;
+      padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+      border-right: none; border-top: 1px solid var(--border);
+    }
+    .brand, .sidebar-footer { display: none; }
+    .nav-btn { flex: 1; justify-content: center; padding: 10px 4px; font-size: 13px; }
+    .topbar { padding: calc(14px + env(safe-area-inset-top)) 16px 14px; }
+    .content { padding: 16px 14px calc(88px + env(safe-area-inset-bottom)); }
     .msg { max-width: 95%; }
+    /* 16px inputs prevent iOS Safari from auto-zooming on focus */
+    .chat-input-row textarea, .research-form input { font-size: 16px; }
+  }
+  @media (max-width: 420px) {
+    .nav-btn { font-size: 12px; padding: 10px 2px; }
+    .topbar .subtitle { display: none; }
   }
 </style>
 </head>
@@ -689,6 +707,13 @@
       renderDashboard();
     }
   });
+
+  // ---------------- PWA ----------------
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => { /* offline shell is optional */ });
+    });
+  }
 })();
 </script>
 </body>
