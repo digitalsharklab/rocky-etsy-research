@@ -77,8 +77,11 @@ node --env-file=.env server.js
 - **Scraping Etsy** jest best-effort — Etsy aktywnie blokuje ruch z serwerów
   (szczególnie z IP chmurowych). Aplikacja obsługuje to gracefully: research
   działa wtedy w trybie „wiedza AI" i jest tak oznaczony w UI.
-- **Rate limiter** jest in-memory (na instancję) — wystarczający dla jednej
-  funkcji serverless / jednego serwera; przy większej skali użyj np. Upstash.
+- **Rate limiter i cache researchu** (15 min TTL) są in-memory, na instancję —
+  wystarczające dla jednej funkcji serverless / jednego serwera; przy większej
+  skali użyj np. Upstash (Redis).
+- **Czas wykonania na Vercel** jest podniesiony do 60 s (`vercel.json` →
+  `maxDuration`), bo research = scraping + wywołanie modelu.
 - **Historia analiz** żyje w `localStorage` przeglądarki (brak backendu bazy
   danych — celowo, dla prostoty wdrożenia).
 

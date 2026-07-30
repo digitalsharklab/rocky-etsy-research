@@ -6,7 +6,7 @@
 
 const cheerio = require('cheerio');
 
-const REQUEST_TIMEOUT_MS = 12_000;
+const REQUEST_TIMEOUT_MS = 8_000;
 
 const BROWSER_HEADERS = {
   'User-Agent':

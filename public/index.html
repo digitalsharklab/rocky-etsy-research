@@ -469,9 +469,10 @@
       typing.remove();
       appendMessage('assistant', data.reply);
     } catch (error) {
-      typing.remove();
       chatHistory.pop(); // keep history consistent with what the server accepted
       save(CHAT_KEY, chatHistory);
+      renderChat(); // drop the unsent bubble (and the typing indicator)
+      input.value = text; // hand the message back so the user can retry
       appendMessage('error', `⚠ ${error.message}`);
     } finally {
       chatBusy = false;

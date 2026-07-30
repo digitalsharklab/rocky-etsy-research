@@ -11,7 +11,9 @@ const FALLBACK_CAPABLE = new Set(['claude-opus-5', 'claude-fable-5']);
 
 let client = null;
 function getClient() {
-  if (!client) client = new Anthropic();
+  // Tight timeout + single retry: the whole request must fit inside the
+  // serverless function's 60s maxDuration (scrape + model call).
+  if (!client) client = new Anthropic({ timeout: 45_000, maxRetries: 1 });
   return client;
 }
 

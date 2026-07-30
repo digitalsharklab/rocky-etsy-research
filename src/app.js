@@ -8,6 +8,16 @@ const { searchEtsy } = require('./etsy');
 
 const app = express();
 app.disable('x-powered-by');
+app.set('trust proxy', 1);
+
+app.use((req, res, next) => {
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+  });
+  next();
+});
 
 app.use(
   cors({
@@ -101,10 +111,12 @@ app.post('/api/chat', async (req, res, next) => {
     const validated = validateChatMessages(req.body);
     if (validated.error) return res.status(400).json({ error: validated.error });
 
+    // On Opus 5 thinking is on by default and counts against max_tokens,
+    // so keep generous headroom above the expected reply length.
     const result = await claude.createMessage({
       system: CHAT_SYSTEM_PROMPT,
       messages: validated.messages,
-      maxTokens: 2048,
+      maxTokens: 4096,
     });
 
     res.json({ reply: result.text, model: result.model });
@@ -168,7 +180,7 @@ function buildResearchPrompt(category, products) {
   if (products.length > 0) {
     const lines = products
       .slice(0, 20)
-      .map((p, i) => `${i + 1}. "${p.title}" — ${p.price}${p.currency ? ` ${p.currency}` : ''}`)
+      .map((p, i) => `${i + 1}. "${p.title.slice(0, 140)}" — ${p.price}${p.currency ? ` ${p.currency}` : ''}`)
       .join('\n');
     return `${header}
 
@@ -184,6 +196,11 @@ Base your analysis primarily on these live listings (price points, wording, prod
 Live Etsy data is not available right now, so base the analysis on your general knowledge of the Etsy digital products market. Be honest about uncertainty where relevant.`;
 }
 
+// Per-instance result cache: repeated queries for the same niche within the
+// TTL skip both the scrape and the (expensive) model call.
+const RESEARCH_CACHE_TTL_MS = 15 * 60_000;
+const researchCache = new Map();
+
 app.post('/api/research', async (req, res, next) => {
   try {
     const category = typeof req.body?.category === 'string' ? req.body.category.trim() : '';
@@ -191,14 +208,28 @@ app.post('/api/research', async (req, res, next) => {
       return res.status(400).json({ error: 'Field "category" must be a 2-80 character string' });
     }
 
+    const cacheKey = category.toLowerCase();
+    const cached = researchCache.get(cacheKey);
+    if (cached && cached.expires > Date.now()) {
+      return res.json({ ...cached.payload, cached: true });
+    }
+
     const scrape = await searchEtsy(category, 24);
     const products = scrape.products;
 
+    // Thinking counts against max_tokens on Opus 5 — headroom prevents the
+    // structured-output JSON from being truncated mid-document.
     const result = await claude.createMessage({
       messages: [{ role: 'user', content: buildResearchPrompt(category, products) }],
-      maxTokens: 3000,
+      maxTokens: 8000,
       outputFormat: ANALYSIS_FORMAT,
     });
+
+    if (result.stopReason === 'max_tokens') {
+      const err = new Error('Analysis ran out of tokens — please try again');
+      err.status = 502;
+      throw err;
+    }
 
     let analysis;
     try {
@@ -209,7 +240,7 @@ app.post('/api/research', async (req, res, next) => {
       throw err;
     }
 
-    res.json({
+    const payload = {
       category,
       dataSource: products.length > 0 ? 'live' : 'ai_knowledge',
       scrapeNote: products.length > 0 ? null : scrape.error,
@@ -218,7 +249,12 @@ app.post('/api/research', async (req, res, next) => {
       analysis,
       model: result.model,
       timestamp: new Date().toISOString(),
-    });
+    };
+
+    if (researchCache.size > 200) researchCache.clear();
+    researchCache.set(cacheKey, { expires: Date.now() + RESEARCH_CACHE_TTL_MS, payload });
+
+    res.json(payload);
   } catch (error) {
     next(error);
   }
